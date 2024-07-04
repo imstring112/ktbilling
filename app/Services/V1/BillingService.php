@@ -4,9 +4,7 @@ namespace App\Services\V1;
 
 use App\Services\ServiceInterface;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Log;
 use League\Csv\Reader;
-use League\Csv\Statement;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class BillingService implements ServiceInterface
@@ -21,28 +19,20 @@ class BillingService implements ServiceInterface
         if (!$file) throw new HttpException('File not received!', 400);
 
         $fileStoragePath = $file->store('billings');
-        $reader = Reader::createFromPath(storage_path('app/' . $fileStoragePath), 'r');
-        $reader->setHeaderOffset(0);
-        $chunkSize = 1000;
-        $offset = 0;
-        $statement = Statement::create();
-        $statement->offset($offset)->limit($chunkSize);
-        $records = $statement->process($reader);
 
-        do {
-            $emails = [];
-            foreach ($records as $record) {
-                if (isset($record['email'])) {
-                    $emails[] = $record['email'];
-                }
+        $csv = Reader::createFromPath(storage_path('app/' . $fileStoragePath), 'r');
+        $batchSize = 100;
+        $csv->setHeaderOffset(0);
+
+        $chunk = [];
+        foreach ($csv as $index => $row) {
+            $chunk[] = $row['email'];
+
+            if (count($chunk) == $batchSize || $index + 1 === count($csv)) {
+                $this->email_service->send($chunk);
+                $chunk = [];
             }
-
-            foreach ($emails as $email) {
-                $this->email_service->send($email);
-            }
-
-            $offset += $chunkSize;
-        } while (count($records) > 0);
+        }
 
         return response()->json(['Billings sends with success'], 200);
     }

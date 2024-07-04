@@ -10,10 +10,12 @@ use Illuminate\Support\Facades\Log;
 class EmailService implements NotificationInterface
 {
 
-    public function send(string $email): void
+    public function send(array $emails): void
     {
-        Log::info("Initialing send email to: {$email}", [EmailService::class]);
+        foreach ($emails as $email) {
+            Log::info("Initialing send email to: {$email}", [EmailService::class]);
 
-        dispatch(new SendEmailJob($email));
+            dispatch(new SendEmailJob($email));
+        }
     }
 }
