@@ -13,7 +13,7 @@ class SendEmailJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public function __construct(private string $email)
+    public function __construct(public string $email)
     {
     }
 

@@ -5,6 +5,7 @@ namespace App\Services\V1;
 use App\Services\ServiceInterface;
 use Illuminate\Http\UploadedFile;
 use League\Csv\Reader;
+use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class BillingService implements ServiceInterface
@@ -13,10 +14,10 @@ class BillingService implements ServiceInterface
     {
     }
 
-    public function generate(UploadedFile $file)
+    public function generate(UploadedFile | null $file)
     {
 
-        if (!$file) throw new HttpException('File not received!', 400);
+        if (!$file) throw new BadRequestException('File not received!');
 
         $fileStoragePath = $file->store('billings');
 
