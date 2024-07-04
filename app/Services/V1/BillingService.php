@@ -4,26 +4,48 @@ namespace App\Services\V1;
 
 use App\Services\ServiceInterface;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
+use League\Csv\Reader;
+use League\Csv\Statement;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
-class BillingService implements ServiceInterface {
-    public function  __construct(private readonly EmailService $email_service){}
+class BillingService implements ServiceInterface
+{
+    public function  __construct(private readonly EmailService $email_service)
+    {
+    }
 
-    public function generate(UploadedFile $file) {
+    public function generate(UploadedFile $file)
+    {
 
         if (!$file) throw new HttpException('File not received!', 400);
 
-        $file_storage_path = $file->store('billings');
-        $file_instance = fopen(storage_path('app/' . $file_storage_path), 'r');
-        $header = fgetcsv($file_instance);
+        $fileStoragePath = $file->store('billings');
 
-        $email_index = array_search('email', $header);
+        $reader = Reader::createFromPath(storage_path('app/' . $fileStoragePath), 'r');
+        $reader->setHeaderOffset(0);
 
-        if (!$email_index) throw new HttpException('Email column not found!', 400);
+        $chunkSize = 1000;
+        $offset = 0;
+        do {
+            $statement = Statement::create();
+            $statement->offset($offset)->limit($chunkSize);
+            $records = $statement->process($reader);
 
-        while($row = fgetcsv($file_instance)) {
-            $email = $row[$email_index];
-            $this->email_service->send($email);
-        }
+            $emails = [];
+            foreach ($records as $record) {
+                if (isset($record['email'])) {
+                    $emails[] = $record['email'];
+                }
+            }
+
+            foreach ($emails as $email) {
+                $this->email_service->send($email);
+            }
+
+            $offset += $chunkSize;
+        } while (count($records) > 0);
+
+        return response()->json(['Billings sends with success'], 200);
     }
 }

@@ -9,7 +9,7 @@ use App\Services\V1\BillingService;
 class BillingController extends Controller
 {
     public function __construct(private readonly BillingService $billing_service){}
-    public function process(BillingRequest $request) : void {
+    public function process(BillingRequest $request) {
         return $this->billing_service->generate($request->file('file'));
     }
 }

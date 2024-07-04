@@ -22,7 +22,7 @@ class BillingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'file' => 'required|mimes:csv'
+            'file' => 'required|mimes:csv|max:204800'
         ];
     }
 }
