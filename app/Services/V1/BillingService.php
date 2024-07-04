@@ -21,17 +21,15 @@ class BillingService implements ServiceInterface
         if (!$file) throw new HttpException('File not received!', 400);
 
         $fileStoragePath = $file->store('billings');
-
         $reader = Reader::createFromPath(storage_path('app/' . $fileStoragePath), 'r');
         $reader->setHeaderOffset(0);
-
         $chunkSize = 1000;
         $offset = 0;
-        do {
-            $statement = Statement::create();
-            $statement->offset($offset)->limit($chunkSize);
-            $records = $statement->process($reader);
+        $statement = Statement::create();
+        $statement->offset($offset)->limit($chunkSize);
+        $records = $statement->process($reader);
 
+        do {
             $emails = [];
             foreach ($records as $record) {
                 if (isset($record['email'])) {
